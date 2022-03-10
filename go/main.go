@@ -1,26 +1,35 @@
 package main
 
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
 // export LD_LIBRARY_PATH=/opt/rsproject/gors/rust/target/debug
 
 /*
 #cgo CFLAGS: -I.
 #cgo LDFLAGS: -L../rust/target/debug -lrust
-#include "ffi_demo.h"
+#include "ffi.h"
 */
 import "C"
-import "fmt"
 
 func main() {
-	arg1 := 1
-	arg2 := 2
-	arg3 := 3
+	var t1 = []byte{'a', 'b', 'c'}
+	var t2 = []byte{'1', '2', '3'}
+	b := C.new_builder()
+	C.add_key(b, (*C.uchar)(unsafe.Pointer(&t1[0])), C.uint(len(t1)))
+	C.add_key(b, (*C.uchar)(unsafe.Pointer(&t2[0])), C.uint(len(t2)))
 
-	cArg1 := C.uint8_t(arg1)
-	cArg2 := C.uint16_t(arg2)
-	cArg3 := C.uint32_t(arg3)
-	ret := C.simple_rust_func_called_from_go(cArg1, cArg2, cArg3)
-	if int(ret) != arg1+arg2+arg3 {
-		panic("SimpleRustFuncCalledFromGo Error")
-	}
-	fmt.Println(ret)
+	char := C.get(b)
+	length := C.len(b)
+
+	var data []byte
+	h := (*reflect.SliceHeader)((unsafe.Pointer(&data)))
+	h.Data = uintptr(unsafe.Pointer(char))
+	h.Len = int(length)
+	h.Cap = int(length)
+	fmt.Println("data", data)
+
 }
